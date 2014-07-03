@@ -22,14 +22,20 @@ function scrollTo(def) {
 	});
 	return false;
 }
-$(function() {
-	$("pre [id]").live("mouseover",
+
+function addInteractivity(dom) {
+
+	var $dom = $(dom);
+
+	// highlight references to the hovered definition
+	$dom.find("code [id]").live("mouseover",
 		function() { $(this).references().highlight() }
 	).live("mouseout",
 		function() { $(this).references().unhighlight() }
 	).live("click", function() { $(this).attr("href") ? false : scrollTo($(this)) });
 	
-	$("pre a[href^='#']").live("mouseover",
+	// highlight the definition to the hovered reference
+	$dom.find("a[href^='#']").live("mouseover",
 		function() { $(this).definition().highlight() }
 	).live("mouseout",
 		function() { $(this).definition().unhighlight() }
@@ -37,7 +43,8 @@ $(function() {
 		function() { return scrollTo($(this).definition()); }
 	);
 	
-	$('[title]').live("mouseover", function() {
+	// add quick tips based on the title attribute
+	$dom.find('[title]').live("mouseover", function() {
 		if ($(this).data('qtip') !== 'object') {
 			$(this).qtip({
 				style: {
@@ -52,7 +59,180 @@ $(function() {
 			}).qtip("show");
 		}
 	});
-});
+}
+
+/**
+ * Uses the very simple heuristic that a comment always
+ * preceeds the code it addresses.
+ */
+function splitIntoCommentsAndCode(codeDom) {
+	
+	var doc = $(codeDom).get(0);
+	
+	// aggregate all nodes until a comment is seen
+	var last = { comment: "", code: [] };
+	var aggr = [];
+	
+	// only treat doc comments as comments
+	function isComment(node) {
+		return $(node).hasClass("comment") && (/^\/\*/.exec($(node).text()) !== null)
+	}
+
+	$(doc.childNodes).each(function (i, el) {
+		if (isComment(el)) {
+			aggr.push(last);
+			last = { comment: el.innerHTML, code: [] }
+		} else {
+			last.code.push(el)
+		}
+	});
+	
+	aggr.push(last);
+	return aggr;
+}
+
+// merges comments and removes the first one if it is empty
+function cleanupComments(doc) {
+
+	var result = [],
+			last  = null,
+			i, el;
+
+	for (i = 0; i < doc.length; i++) {
+		el = doc[i];
+
+		if (last == null) {
+			last = el
+			continue;
+		}
+
+		if (el.code.length === 0 && el.comment === "")
+			continue;
+
+		if (last.code.length == 0 || el.code.length == 0) {
+			last.code = last.code.concat(el.code)
+			last.markup += el.markup
+			last.comment += el.comment
+		} else {
+			result.push(last);
+			last = el;
+		}
+
+	}
+
+	result.push(last);
+	return result;
+}
+
+/**
+ * Annotates each block with the markdown generated html corresponding to the comment
+ *
+ * input:   [{ comment: "/** foo *bar* ...",  code: [] }, ...]
+ * output:  [{ comment: "/** foo *bar* ...",  code: [], markup: <html-node> }, ...]
+ */
+function annotateWithHtml(doc) {
+	$(doc).each(function (i, el) {
+		 el.markup = Markdown.toHTML(htmlDecode(extractCommentText(el.comment)));
+	})
+}
+
+/**
+ * Parses the comment and removes comment syntax to extract the contained text
+ */
+function extractCommentText(text) {
+	
+	var lines = text.split("\n")
+
+	var start = /^\/\*+/,
+			lineStart = /^[ \t]*\*[ ]?/,
+			end = /\*+\//;
+
+	for (var i = 0; i < lines.length; i++) {
+		
+		if (i === 0) {
+			lines[0] = lines[0].replace(start, "");
+		}
+		
+		if (i === lines.length - 1) {
+			lines[i] = lines[i].replace(end, "");
+			lines[i] = lines[i].replace(lineStart, "");
+		} else {
+			lines[i] = lines[i].replace(lineStart, "");
+		}
+		
+	}
+	
+	return lines.join("\n");
+}
+
+function htmlDecode(text) {
+		var codes = {
+				apos : '\'',
+				amp : '&',
+				lt : '<',
+				gt : '>'
+		}
+
+		var r = new RegExp('&(' + Object.getOwnPropertyNames(codes).join('|') +');', 'g')
+
+		return text.replace(r, function(_, code) {
+			return codes[code];
+		})
+}
+
+/**
+ * Renders a div-based representation grouping code and comments into sections
+ */
+function renderDiv(title, doc) {
+
+	var table = $("<article>")
+		.attr("id", "documentation");
+
+	var head = $("<section>")
+			.append($("<div>")
+				.append($("<h1>").html(title))
+				.addClass("docs"))
+			.append($("<div>")
+				.addClass("code"))
+	
+	table.append(head);
+
+	$(doc).map(function (i, el) {
+		var row = $("<section>")
+		
+		$("<div>")
+			.html(el.markup)
+			.addClass("docs")
+			.appendTo(row);
+		
+		$("<div>")
+			.append($("<code>").append(el.code))
+			.addClass("code")
+			.appendTo(row);
+			
+		return row;
+		
+	}).appendTo(table);
+	
+	return table;
+}
+
+function toLiterateProgramming(docDom) {
+	var $doc = $(docDom);
+
+	var blocks = splitIntoCommentsAndCode($doc);
+	annotateWithHtml(blocks);
+	
+	blocks = cleanupComments(blocks);
+
+	var literate = renderDiv(document.title, blocks);
+
+	$(document.body).append(literate);
+
+	addInteractivity(".code");
+
+	$doc.hide();
+}
 
 $(window).load(function() {
 	var id = id = /^\?id=(.+)$/.exec(location.search);
@@ -74,27 +254,11 @@ $(window).load(function() {
 	} else { // if not showing in a frame
 		if (id)	// redirect to #id if given id param
 			window.location = fullUri($("#" + id[1]));
-
-		var exp = $(
-			'<div class="tool" id="export">' +
-			'<code>&lt;iframe src="<span class="src">path-to-source</span>" width="<span class="width">700</span>"' +
-			' height="<span class="height">500</span>" frameborder="0"&gt; &lt;/iframe&gt;</code>' +
-			'</div>'
-		);
-		var exp_control = $('<div class="tool" id="export-control"><a href="#">Export</a></div>');
-		$("body").append(exp).append(exp_control);
-		
-		updateExportUri(location.hash);
-		exp_control.show().click( function() {
-			exp.slideToggle("fast");
-			return false;
-		});
-		$(window).resize(sizeUpdate = function() {
-			exp.find("span.width").text(window.innerWidth || document.documentElement.clientWidth);
-			exp.find("span.height").text(window.innerHeight || document.documentElement.clientWidth);
-		});
-		sizeUpdate();
 	}
+
+	// addInteractivity("body > pre");
+	toLiterateProgramming("body > pre");
+	$(document.body).addClass("literate");
 });
 
 jQuery.fn.extend({
