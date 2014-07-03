@@ -1,11 +1,14 @@
+This is a fork of Scala XRay presenting the scala sources in a literate programming style similar to [docco.js](https://jashkenas.github.io/docco/).
+
+See <http://b-studios.github.io/browse/samples/literate/WAE.scala.html> for an example.
+
+
 Browsable Scala source code in HTML with:
 
 - syntax highlighting
 - types/applied implicits in tooltips
 - references/definition highlighted on mouseover
 - links to definition
-
-See <http://harrah.github.com/browse/samples/index.html> for samples.
 
 Still in development.  Bugs are features and features are accidental.
 
