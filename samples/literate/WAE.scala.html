@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>WAE.scala</title>
+        <script>exports = this</script>
+        <script type="text/javascript" src="jquery-all.js"></script>
+        <script type="text/javascript" src="linked.js"></script>
+        <link rel="stylesheet" type="text/css" href="style.css" title="Style"></link>
+    </head>
+    <body>
+        <pre>
+<span class="comment">/* Adding With-Expresions
+ * ======================
+ * These are lecture notes for the 
+ * [&quot;Programming Languages and Types&quot;](https://github.com/klauso/PLT2013) 
+ * at the University of Marburg loosely based on Sec. 3 of the book &quot;Programming 
+ * Languages: Application and Interpretation&quot; by Shriram Krishnamurthi.
+ * Please send comments or errors in these notes via email to Klaus Ostermann.
+ * My email address can be found on my webpage. Alternatively, you can also 
+ * propose corrections as a github pull request. */</span>
+
+
+<span class="comment">/* We want, step by step, to develop our primitive calculator language into a 
+ * full-fledged PL. 
+ *
+ * One important milestone on this way is the ability to deal with names.
+ * While our previous language allowed expressions with identifiers in them,
+ * it had no _binders_ : Constructs that allow to give meaning to a new name.
+ *
+ * In this variant of the language, called WAE, we introduce such a binder
+ * called `With` with which we can give an expression a name that can be used
+ * in the body of the `With` expression. This intuition is captured in the 
+ * definition of the `With` case class below, which extends our previous 
+ * language. 
+ *
+ * We study this WAE language to better understand what names mean in 
+ * programming languages, and how they can be implemented.
+ *
+ * Note that we deal with *two* languages here:
+ * 
+ * 1. This Scala file with Scala code. (The so-called &quot;meta-language&quot;)
+ * 2. Most of the functions work on programs written in the WAE language. (Or
+ *    also called &quot;object-language&quot;)
+ * 
+ * Most of the time, we concentrate on WAE, but sometimes, we also talk about 
+ * Scala.
+ * 
+ * We have not defined a concrete syntax for WAE, but it is a real language 
+ * nevertheless. We sometimes use some made-up syntax for examples on the 
+ * blackboard or in comments. */</span>
+<span class="keyword">object</span> <a title="wae.type" id="wae">wae</a> <a href="#wae" title="wae.type" class="delimiter">{</a>
+
+  <span class="keyword">sealed</span> <span class="keyword">abstract</span> <span class="keyword">class</span> <a title="class Exp extends AnyRef" id="wae;Exp">Exp</a> 
+  <span class="keyword">case class</span> <a title="class Num extends wae.Exp with Product with Serializable" id="wae.Num.readResolve">Num</a><a href="#wae.Num.readResolve" title="Product" class="delimiter">(</a><a title="Int" id="wae;Num.n">n</a>: <span title="Int">Int</span><span class="delimiter">)</span> <span class="keyword">extends</span> <a href="#wae;Exp" title="wae.Exp">Exp</a>
+  <span class="keyword">case class</span> <a title="class Add extends wae.Exp with Product with Serializable" id="wae.Add.readResolve">Add</a><a href="#wae.Add.readResolve" title="Product" class="delimiter">(</a><a title="wae.Exp" id="wae;Add.lhs">lhs</a>: <a href="#wae;Exp" title="wae.Exp">Exp</a>, <a title="wae.Exp" id="wae;Add.rhs">rhs</a>: <a href="#wae;Exp" title="wae.Exp">Exp</a><span class="delimiter">)</span> <span class="keyword">extends</span> <a href="#wae;Exp" title="wae.Exp">Exp</a>
+  <span class="keyword">case class</span> <a title="class Mul extends wae.Exp with Product with Serializable" id="wae.Mul.readResolve">Mul</a><a href="#wae.Mul.readResolve" title="Product" class="delimiter">(</a><a title="wae.Exp" id="wae;Mul.lhs">lhs</a>: <a href="#wae;Exp" title="wae.Exp">Exp</a>, <a title="wae.Exp" id="wae;Mul.rhs">rhs</a>: <a href="#wae;Exp" title="wae.Exp">Exp</a><span class="delimiter">)</span> <span class="keyword">extends</span> <a href="#wae;Exp" title="wae.Exp">Exp</a>
+  <span class="keyword">case class</span> <a title="class Id extends wae.Exp with Product with Serializable" id="wae.Id.readResolve">Id</a><a href="#wae.Id.readResolve" title="Product" class="delimiter">(</a><a title="Symbol" id="wae;Id.x">x</a>: <span title="Symbol">Symbol</span><span class="delimiter">)</span> <span class="keyword">extends</span> <a href="#wae;Exp" title="wae.Exp">Exp</a> 
+  <span class="keyword">case class</span> <a title="class With extends wae.Exp with Product with Serializable" id="wae.With.readResolve">With</a><a href="#wae.With.readResolve" title="Product" class="delimiter">(</a><a title="Symbol" id="wae;With.x">x</a>: <span title="Symbol">Symbol</span>, <a title="wae.Exp" id="wae;With.xdef">xdef</a>: <a href="#wae;Exp" title="wae.Exp">Exp</a>, <a title="wae.Exp" id="wae;With.body">body</a>: <a href="#wae;Exp" title="wae.Exp">Exp</a><span class="delimiter">)</span> <span class="keyword">extends</span> <a href="#wae;Exp" title="wae.Exp">Exp</a>
+   
+  <span class="comment">/* We use implicits again to make example programs less verbose. */</span>
+  <span class="keyword">implicit</span> <span class="keyword">def</span> <a title="implicit wae.num2exp : (n: Int)wae.Num" id="wae.num2exp">num2exp</a><span class="delimiter">(</span><a title="Int" id="wae.num2exp.n">n</a>: <span title="Int">Int</span><span class="delimiter">)</span> = <a href="#wae.Num.readResolve" title="(n: Int)wae.Num">Num</a><span class="delimiter">(</span><a href="#wae.num2exp.n" title="Int">n</a><span class="delimiter">)</span>
+  <span class="keyword">implicit</span> <span class="keyword">def</span> <a title="implicit wae.sym2exp : (x: Symbol)wae.Id" id="wae.sym2exp">sym2exp</a><span class="delimiter">(</span><a title="Symbol" id="wae.sym2exp.x">x</a>: <span title="Symbol">Symbol</span><span class="delimiter">)</span> = <a href="#wae.Id.readResolve" title="(x: Symbol)wae.Id">Id</a><span class="delimiter">(</span><a href="#wae.sym2exp.x" title="Symbol">x</a><span class="delimiter">)</span>
+
+  <span class="comment">/* A first example program in WAE. */</span>
+  <span class="keyword">val</span> <a title="wae.With" id="wae.test">test</a> = <a href="#wae.With.readResolve" title="(x: Symbol, xdef: wae.Exp, body: wae.Exp)wae.With">With</a><span class="delimiter">(</span><span title="(name: String)Symbol" class="symbol">'x</span>, <a href="#wae.num2exp" title="implicit wae.num2exp : (n: Int)wae.Num" class="int">5</a>, <a href="#wae.Add.readResolve" title="(lhs: wae.Exp, rhs: wae.Exp)wae.Add">Add</a><span class="delimiter">(</span><a href="#wae.sym2exp" title="implicit wae.sym2exp : (x: Symbol)wae.Id" class="symbol">'x</a>,<a href="#wae.sym2exp" title="implicit wae.sym2exp : (x: Symbol)wae.Id" class="symbol">'x</a><span class="delimiter">)</span><span class="delimiter">)</span>
+
+
+
+  <span class="comment">/* Substitution
+   * ------------
+   * Instead of dealing with identifiers as external entities as in AE, 
+   * identifiers can now be defined within the language. This justifies a new 
+   * treatment of identifiers. We will explain them in terms of _substitution_, 
+   * a notion well-known informally from Gymnasium algebra.
+   *
+   * The idea is the following: The interpreter transforms the term
+   *
+   *     with (x = 5) {
+   *       x + x
+   *     }
+   * 
+   * into
+   *
+   *     5 + 5
+   * 
+   * before proceeding. That is, all occurrences of `x` have been replaced by 5.
+   *
+   * Note that these two programs -- before and after the substitution -- are 
+   * certainly not *equal*: They look quite different. However, they are 
+   * *equivalent* in the sense that when evaluated, they will produce the same 
+   * number. Such transformations between different but somehow equivalent 
+   * programs are an important tool for the study of programs, and of programming 
+   * languages.
+   *
+   * Often, if we know which programs behave identically, we understand better how 
+   * programs behave in general. We will see more examples of this in this 
+   * lecture.
+   *
+   * Hence, the implementation of the `With` case of our interpreter should be 
+   * something like:
+   * 
+   *     case With(x, xdef, body) =&gt; eval(subst(body,x,Num(eval(xdef))))
+   * 
+   * utilizing a function `subst` with the following signature:
+   * 
+   *     subst: (Exp,Symbol,Num) =&gt; Exp
+   *
+   * The type of the third parameter is `Num` instead of `Exp` because it is more 
+   * difficult to get substitution correct when arbitrary expressions can be 
+   * inserted (accidential name capture problem, more about that later).
+   *
+   * Since we want to experiment with different versions of substitution, we write 
+   * the interpreter in such a way that we can parameterize it with a 
+   * substitution function: */</span>
+  <span class="keyword">def</span> <a title="(subst: (wae.Exp, Symbol, wae.Num) =&gt; wae.Exp)wae.Exp =&gt; Int" id="wae.makeEval">makeEval</a><span class="delimiter">(</span><a title="(wae.Exp, Symbol, wae.Num) =&gt; wae.Exp" id="wae.makeEval.subst">subst</a>: <span class="delimiter">(</span>Exp,Symbol,Num<span class="delimiter">)</span> =&gt; Exp<span class="delimiter">)</span>: Exp =&gt; Int = <span class="delimiter">{</span>
+    <span class="keyword">def</span> <a title="(e: wae.Exp)Int" id="wae.makeEval.eval">eval</a><span class="delimiter">(</span><a title="wae.Exp" id="wae.makeEval.eval.e">e</a>: <a href="#wae;Exp" title="wae.Exp">Exp</a><span class="delimiter">)</span> : <span title="Int">Int</span> = <a href="#wae.makeEval.eval.e" title="wae.Exp">e</a> <span title="Int" class="keyword">match</span> <span class="delimiter">{</span>
+      <span class="keyword">case</span> Num<span class="delimiter">(</span><a title="Int" id="wae.makeEval.eval.n">n</a><span class="delimiter">)</span> =&gt; <a href="#wae.makeEval.eval.n" title="Int">n</a>
+      <span class="keyword">case</span> Id<span class="delimiter">(</span><span title="Symbol">x</span><span class="delimiter">)</span> =&gt; sys.<span title="(message: String)Nothing">error</span><span class="delimiter">(</span><span title="String(&quot;unbound variable: &quot;)" class="string">&quot;unbound variable: &quot;</span><span title="(x$1: Any)String">+</span><span title="Symbol">x</span><span class="delimiter">)</span>
+      <span class="keyword">case</span> Add<span class="delimiter">(</span><span title="wae.Exp">l</span>,<span title="wae.Exp">r</span><span class="delimiter">)</span> =&gt; <a href="#wae.makeEval.eval" title="(e: wae.Exp)Int">eval</a><span class="delimiter">(</span><span title="wae.Exp">l</span><span class="delimiter">)</span> <span title="(x: Int)Int">+</span> <a href="#wae.makeEval.eval" title="(e: wae.Exp)Int">eval</a><span class="delimiter">(</span><span title="wae.Exp">r</span><span class="delimiter">)</span>
+      <span class="keyword">case</span> Mul<span class="delimiter">(</span><span title="wae.Exp">l</span>,<span title="wae.Exp">r</span><span class="delimiter">)</span> =&gt; <a href="#wae.makeEval.eval" title="(e: wae.Exp)Int">eval</a><span class="delimiter">(</span><span title="wae.Exp">l</span><span class="delimiter">)</span> <span title="(x: Int)Int">*</span> <a href="#wae.makeEval.eval" title="(e: wae.Exp)Int">eval</a><span class="delimiter">(</span><span title="wae.Exp">r</span><span class="delimiter">)</span>
+
+      <span class="comment">// After evaluation, take the `Int` and wrap it into a `Num`:</span>
+      <span class="keyword">case</span> With<span class="delimiter">(</span><span title="Symbol">x</span>, <a title="wae.Exp" id="wae.makeEval.eval.xdef">xdef</a>, <a title="wae.Exp" id="wae.makeEval.eval.body">body</a><span class="delimiter">)</span> =&gt; <a href="#wae.makeEval.eval" title="(e: wae.Exp)Int">eval</a><span class="delimiter">(</span><a href="#wae.makeEval.subst" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst</a><span class="delimiter">(</span><a href="#wae.makeEval.eval.body" title="wae.Exp">body</a>,<span title="Symbol">x</span>,<a href="#wae.Num.readResolve" title="(n: Int)wae.Num">Num</a><span class="delimiter">(</span><a href="#wae.makeEval.eval" title="(e: wae.Exp)Int">eval</a><span class="delimiter">(</span><a href="#wae.makeEval.eval.xdef" title="wae.Exp">xdef</a><span class="delimiter">)</span><span class="delimiter">)</span><span class="delimiter">)</span><span class="delimiter">)</span> 
+    <span class="delimiter">}</span>
+    <a href="#wae.makeEval.eval" title="(e: wae.Exp)Int">eval</a>
+  <span class="delimiter">}</span>
+
+
+  <span class="comment">/* &gt; **Definition (Substitution - Take 1):**
+   * &gt; To substitute identiﬁer `i` in `e` with expression `v`, replace all 
+   * &gt; identiﬁers in `e` that have the name `i` with the expression `v`.
+   *
+   * Let's try to formalize this definition: */</span>
+
+  <span class="comment">// val subst1 : (Exp,Symbol,Num) =&gt; Exp = (e,i,v) =&gt; e match {</span>
+  <span class="comment">//   case Num(n) =&gt; e</span>
+  <span class="comment">//   case Id(x) =&gt; if (x == i) v else e</span>
+  <span class="comment">//   case Add(l,r) =&gt; Add( subst1(l,i,v), subst1(r,i,v))</span>
+  <span class="comment">//   case Mul(l,r) =&gt; Mul( subst1(l,i,v), subst1(r,i,v))</span>
+  <span class="comment">//   case With(x,xdef,body) =&gt; With( if (x ==i) v else x,</span>
+  <span class="comment">//                                   subst1(xdef,i,v),</span>
+  <span class="comment">//                                   subst1(body,i,v))</span>
+  <span class="comment">// }</span>
+
+  <span class="comment">/* Unfortunately this does not even type-check! And rightly so, because it might 
+   * otherwise turn reasonable programs into programs that are not even 
+   * syntactically legal anymore.
+   * 
+   * Exercise for self-study: Find an expression that would be transformed into 
+   * one that is not syntactically legal.
+   *
+   * To see the reason for this, we need to define some terminology (the word 
+   * &quot;instance&quot; here means &quot;occurence&quot;):
+   *
+   * &gt; **Deﬁnition (Binding Instance):**
+   * &gt; A _binding instance_ of an identiﬁer is the instance of the identiﬁer that 
+   * &gt; gives it its value. In WAE , the `x` position of a with is the only binding 
+   * &gt; instance.
+   *
+   * &gt; **Deﬁnition (Scope):**
+   * &gt; The _scope_ of a binding instance is the region of program text in which 
+   * &gt; instances of the identiﬁer refer to the value bound by the binding instance.
+   *
+   * &gt; **Deﬁnition (Bound Instance):**
+   * &gt; An identiﬁer is _bound_ if it is contained within the scope of a binding 
+   * &gt; instance of its name.
+   *
+   * &gt; **Deﬁnition (Free Instance):**
+   * &gt; An identiﬁer not contained in the scope of any binding instance of its name 
+   * &gt; is said to be _free_.
+   *
+   * Examples: In WAE, the symbol in `Id('x)` is a bound or free instance, and the
+   * symbol in `With('x, …, …)` is a binding instance. The scope of this binding 
+   * instance is the third sub-term of `With`.
+   *
+   * Now the reason can be revealed. Our first attempt failed because we substitue 
+   * the identifier occurs in the binding position in the with-expression. This 
+   * renders the expression because after substitution illegal the binding 
+   * position is occupied by a `Num` but an identifier is expected.
+   * 
+   * To correct this mistake, we need another take at defining substitution:
+   *
+   *
+   * &gt; **Definition (Substitution - Take 2):**
+   * &gt; To substitute identiﬁer `i` in `e` with expression `v`, replace all 
+   * &gt; identifiers in `e` which are not binding instances that have the name `i`
+   * &gt;  with the expression `v`.
+   *
+   * Here is the formalization of this second definition: */</span>
+  <span class="keyword">val</span> <a title="(wae.Exp, Symbol, wae.Num) =&gt; wae.Exp" id="wae.subst2">subst2</a>: <span class="delimiter">(</span>Exp,Symbol,Num<span class="delimiter">)</span> =&gt; Exp = <span class="delimiter">(</span><a title="wae.Exp" id="wae.subst2.$anonfun.e">e</a>,<a title="Symbol" id="wae.subst2.$anonfun.i">i</a>,<a title="wae.Num" id="wae.subst2.$anonfun.v">v</a><span class="delimiter">)</span> =&gt; <a href="#wae.subst2.$anonfun.e" title="wae.Exp">e</a> <span title="wae.Exp" class="keyword">match</span> <span class="delimiter">{</span>
+      <span class="keyword">case</span> Num<span class="delimiter">(</span><a title="Int" id="wae.subst2.$anonfun.n">n</a><span class="delimiter">)</span> =&gt; <a href="#wae.subst2.$anonfun.e" title="wae.Exp">e</a>
+      
+      <span class="comment">// Bound or free instance =&gt; substitute if names match</span>
+      <span class="keyword">case</span> Id<span class="delimiter">(</span><span title="Symbol">x</span><span class="delimiter">)</span> =&gt; <span title="wae.Exp" class="keyword">if</span> <span class="delimiter">(</span><span title="Symbol">x</span> <span title="(x$1: AnyRef)Boolean">==</span> <a href="#wae.subst2.$anonfun.i" title="Symbol">i</a><span class="delimiter">)</span> <a href="#wae.subst2.$anonfun.v" title="wae.Num">v</a> <span class="keyword">else</span> <a href="#wae.subst2.$anonfun.e" title="wae.Exp">e</a>
+      
+      <span class="keyword">case</span> Add<span class="delimiter">(</span><span title="wae.Exp">l</span>,<span title="wae.Exp">r</span><span class="delimiter">)</span> =&gt; <a href="#wae.Add.readResolve" title="(lhs: wae.Exp, rhs: wae.Exp)wae.Add">Add</a><span class="delimiter">(</span> <a href="#wae.subst2" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst2</a><span class="delimiter">(</span><span title="wae.Exp">l</span>,<a href="#wae.subst2.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst2.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span>, <a href="#wae.subst2" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst2</a><span class="delimiter">(</span><span title="wae.Exp">r</span>,<a href="#wae.subst2.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst2.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span><span class="delimiter">)</span>
+      <span class="keyword">case</span> Mul<span class="delimiter">(</span><span title="wae.Exp">l</span>,<span title="wae.Exp">r</span><span class="delimiter">)</span> =&gt; <a href="#wae.Mul.readResolve" title="(lhs: wae.Exp, rhs: wae.Exp)wae.Mul">Mul</a><span class="delimiter">(</span> <a href="#wae.subst2" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst2</a><span class="delimiter">(</span><span title="wae.Exp">l</span>,<a href="#wae.subst2.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst2.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span>, <a href="#wae.subst2" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst2</a><span class="delimiter">(</span><span title="wae.Exp">r</span>,<a href="#wae.subst2.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst2.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span><span class="delimiter">)</span>
+      
+      <span class="comment">// Binding instance =&gt; do not substitute</span>
+      <span class="keyword">case</span> With<span class="delimiter">(</span><span title="Symbol">x</span>,<a title="wae.Exp" id="wae.subst2.$anonfun.xdef">xdef</a>,<a title="wae.Exp" id="wae.subst2.$anonfun.body">body</a><span class="delimiter">)</span> =&gt; <a href="#wae.With.readResolve" title="(x: Symbol, xdef: wae.Exp, body: wae.Exp)wae.With">With</a><span class="delimiter">(</span> <span title="Symbol">x</span>,
+                                      <a href="#wae.subst2" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst2</a><span class="delimiter">(</span><a href="#wae.subst2.$anonfun.xdef" title="wae.Exp">xdef</a>,<a href="#wae.subst2.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst2.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span>,
+                                      <a href="#wae.subst2" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst2</a><span class="delimiter">(</span><a href="#wae.subst2.$anonfun.body" title="wae.Exp">body</a>,<a href="#wae.subst2.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst2.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span><span class="delimiter">)</span>
+  <span class="delimiter">}</span>
+
+  <span class="comment">/* Let's create an interpreter that uses this substitution function. */</span>
+  <span class="keyword">def</span> <a title="=&gt; wae.Exp =&gt; Int" id="wae.eval2">eval2</a> = <a href="#wae.makeEval" title="(subst: (wae.Exp, Symbol, wae.Num) =&gt; wae.Exp)wae.Exp =&gt; Int">makeEval</a><span class="delimiter">(</span><a href="#wae.subst2" title="=&gt; (wae.Exp, Symbol, wae.Num) =&gt; wae.Exp">subst2</a><span class="delimiter">)</span>
+
+  <span title="(assertion: Boolean)Unit">assert</span><span class="delimiter">(</span><a href="#wae.eval2" title="(v1: wae.Exp)Int">eval2</a><span class="delimiter">(</span><a href="#wae.test" title="=&gt; wae.With">test</a><span class="delimiter">)</span> <span title="(x: Int)Boolean">==</span> <span title="Int(10)" class="int">10</span><span class="delimiter">)</span> <span class="comment">//=&gt; it works!</span>
+
+  <span class="keyword">val</span> <a title="wae.With" id="wae.test2">test2</a> = <a href="#wae.With.readResolve" title="(x: Symbol, xdef: wae.Exp, body: wae.Exp)wae.With">With</a><span class="delimiter">(</span><span title="(name: String)Symbol" class="symbol">'x</span>, <a href="#wae.num2exp" title="implicit wae.num2exp : (n: Int)wae.Num" class="int">5</a>, <a href="#wae.Add.readResolve" title="(lhs: wae.Exp, rhs: wae.Exp)wae.Add">Add</a><span class="delimiter">(</span><a href="#wae.sym2exp" title="implicit wae.sym2exp : (x: Symbol)wae.Id" class="symbol">'x</a>, <a href="#wae.With.readResolve" title="(x: Symbol, xdef: wae.Exp, body: wae.Exp)wae.With">With</a><span class="delimiter">(</span><span title="(name: String)Symbol" class="symbol">'x</span>, <a href="#wae.num2exp" title="implicit wae.num2exp : (n: Int)wae.Num" class="int">3</a>,<a href="#wae.num2exp" title="implicit wae.num2exp : (n: Int)wae.Num" class="int">10</a><span class="delimiter">)</span><span class="delimiter">)</span><span class="delimiter">)</span>
+
+  <span title="(assertion: Boolean)Unit">assert</span><span class="delimiter">(</span><a href="#wae.eval2" title="(v1: wae.Exp)Int">eval2</a><span class="delimiter">(</span><a href="#wae.test2" title="=&gt; wae.With">test2</a><span class="delimiter">)</span> <span title="(x: Int)Boolean">==</span> <span title="Int(15)" class="int">15</span><span class="delimiter">)</span> <span class="comment">//=&gt; also works as expected</span>
+
+  <span class="keyword">val</span> <a title="wae.With" id="wae.test3">test3</a> = <a href="#wae.With.readResolve" title="(x: Symbol, xdef: wae.Exp, body: wae.Exp)wae.With">With</a><span class="delimiter">(</span><span title="(name: String)Symbol" class="symbol">'x</span>, <a href="#wae.num2exp" title="implicit wae.num2exp : (n: Int)wae.Num" class="int">5</a>, <a href="#wae.Add.readResolve" title="(lhs: wae.Exp, rhs: wae.Exp)wae.Add">Add</a><span class="delimiter">(</span><a href="#wae.sym2exp" title="implicit wae.sym2exp : (x: Symbol)wae.Id" class="symbol">'x</a>, <a href="#wae.With.readResolve" title="(x: Symbol, xdef: wae.Exp, body: wae.Exp)wae.With">With</a><span class="delimiter">(</span><span title="(name: String)Symbol" class="symbol">'x</span>, <a href="#wae.num2exp" title="implicit wae.num2exp : (n: Int)wae.Num" class="int">3</a>,<a href="#wae.sym2exp" title="implicit wae.sym2exp : (x: Symbol)wae.Id" class="symbol">'x</a><span class="delimiter">)</span><span class="delimiter">)</span><span class="delimiter">)</span>
+
+  <span class="comment">// assert(eval2(test3) == 8) //=&gt; Bang! Result is 10 instead!</span>
+
+  <span class="comment">/* What went wrong here? Our substitution algorithm respected binding instances, 
+   * but not their scope.
+   * In the sample expression, the with introduces a new scope for the inner `x`. 
+   * The scope of the outer `x` is _shadowed_ or _masked_ by the inner binding. 
+   * Because substitution doesn’t recognize this possibility, it incorrectly 
+   * substitutes the inner `x`. 
+   *
+   * &gt; **Definition (Substitution - Take 3):**
+   * &gt; To substitute identiﬁer `i` in `e` with expression `v`, replace all non-
+   * &gt; binding identiﬁers in `e` having the name `i` with the expression `v`, 
+   * &gt; unless the identiﬁer is in a scope different from that introduced by `i`. 
+   *
+   * So, what happens if we just forget to substitute into the body? */</span>
+  <span class="keyword">val</span> <a title="(wae.Exp, Symbol, wae.Num) =&gt; wae.Exp" id="wae.subst3">subst3</a>: <span class="delimiter">(</span>Exp,Symbol,Num<span class="delimiter">)</span> =&gt; Exp = <span class="delimiter">(</span><a title="wae.Exp" id="wae.subst3.$anonfun.e">e</a>,<a title="Symbol" id="wae.subst3.$anonfun.i">i</a>,<a title="wae.Num" id="wae.subst3.$anonfun.v">v</a><span class="delimiter">)</span> =&gt; <a href="#wae.subst3.$anonfun.e" title="wae.Exp">e</a> <span title="wae.Exp" class="keyword">match</span> <span class="delimiter">{</span>
+      <span class="keyword">case</span> Num<span class="delimiter">(</span><a title="Int" id="wae.subst3.$anonfun.n">n</a><span class="delimiter">)</span> =&gt; <a href="#wae.subst3.$anonfun.e" title="wae.Exp">e</a>
+      <span class="keyword">case</span> Id<span class="delimiter">(</span><span title="Symbol">x</span><span class="delimiter">)</span> =&gt; <span title="wae.Exp" class="keyword">if</span> <span class="delimiter">(</span><span title="Symbol">x</span> <span title="(x$1: AnyRef)Boolean">==</span> <a href="#wae.subst3.$anonfun.i" title="Symbol">i</a><span class="delimiter">)</span> <a href="#wae.subst3.$anonfun.v" title="wae.Num">v</a> <span class="keyword">else</span> <a href="#wae.subst3.$anonfun.e" title="wae.Exp">e</a>
+      <span class="keyword">case</span> Add<span class="delimiter">(</span><span title="wae.Exp">l</span>,<span title="wae.Exp">r</span><span class="delimiter">)</span> =&gt; <a href="#wae.Add.readResolve" title="(lhs: wae.Exp, rhs: wae.Exp)wae.Add">Add</a><span class="delimiter">(</span> <a href="#wae.subst3" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst3</a><span class="delimiter">(</span><span title="wae.Exp">l</span>,<a href="#wae.subst3.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst3.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span>, <a href="#wae.subst3" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst3</a><span class="delimiter">(</span><span title="wae.Exp">r</span>,<a href="#wae.subst3.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst3.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span><span class="delimiter">)</span>
+      <span class="keyword">case</span> Mul<span class="delimiter">(</span><span title="wae.Exp">l</span>,<span title="wae.Exp">r</span><span class="delimiter">)</span> =&gt; <a href="#wae.Mul.readResolve" title="(lhs: wae.Exp, rhs: wae.Exp)wae.Mul">Mul</a><span class="delimiter">(</span> <a href="#wae.subst3" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst3</a><span class="delimiter">(</span><span title="wae.Exp">l</span>,<a href="#wae.subst3.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst3.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span>, <a href="#wae.subst3" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst3</a><span class="delimiter">(</span><span title="wae.Exp">r</span>,<a href="#wae.subst3.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst3.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span><span class="delimiter">)</span>
+
+      <span class="comment">// Here `body` is not substituted recursively:</span>
+      <span class="keyword">case</span> With<span class="delimiter">(</span><span title="Symbol">x</span>,<a title="wae.Exp" id="wae.subst3.$anonfun.xdef">xdef</a>,<a title="wae.Exp" id="wae.subst3.$anonfun.body">body</a><span class="delimiter">)</span> =&gt; <a href="#wae.With.readResolve" title="(x: Symbol, xdef: wae.Exp, body: wae.Exp)wae.With">With</a><span class="delimiter">(</span> <span title="Symbol">x</span>, 
+                                      <a href="#wae.subst3" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst3</a><span class="delimiter">(</span><a href="#wae.subst3.$anonfun.xdef" title="wae.Exp">xdef</a>,<a href="#wae.subst3.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst3.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span>, 
+                                      <a href="#wae.subst3.$anonfun.body" title="wae.Exp">body</a><span class="delimiter">)</span>
+  <span class="delimiter">}</span>
+
+  <span class="keyword">def</span> <a title="=&gt; wae.Exp =&gt; Int" id="wae.eval3">eval3</a> = <a href="#wae.makeEval" title="(subst: (wae.Exp, Symbol, wae.Num) =&gt; wae.Exp)wae.Exp =&gt; Int">makeEval</a><span class="delimiter">(</span><a href="#wae.subst3" title="=&gt; (wae.Exp, Symbol, wae.Num) =&gt; wae.Exp">subst3</a><span class="delimiter">)</span>
+
+  <span title="(assertion: Boolean)Unit">assert</span><span class="delimiter">(</span><a href="#wae.eval3" title="(v1: wae.Exp)Int">eval3</a><span class="delimiter">(</span><a href="#wae.test" title="=&gt; wae.With">test</a><span class="delimiter">)</span> <span title="(x: Int)Boolean">==</span> <span title="Int(10)" class="int">10</span><span class="delimiter">)</span>
+
+  <span title="(assertion: Boolean)Unit">assert</span><span class="delimiter">(</span><a href="#wae.eval3" title="(v1: wae.Exp)Int">eval3</a><span class="delimiter">(</span><a href="#wae.test2" title="=&gt; wae.With">test2</a><span class="delimiter">)</span> <span title="(x: Int)Boolean">==</span> <span title="Int(15)" class="int">15</span><span class="delimiter">)</span>
+
+  <span title="(assertion: Boolean)Unit">assert</span><span class="delimiter">(</span><a href="#wae.eval3" title="(v1: wae.Exp)Int">eval3</a><span class="delimiter">(</span><a href="#wae.test3" title="=&gt; wae.With">test3</a><span class="delimiter">)</span> <span title="(x: Int)Boolean">==</span> <span title="Int(8)" class="int">8</span><span class="delimiter">)</span> <span class="comment">//=&gt; Now test3 works!</span>
+
+  <span class="comment">/* Adding another test, we see that this sadly is no true solution: */</span>
+  <span class="keyword">val</span> <a title="wae.With" id="wae.test4">test4</a> = <a href="#wae.With.readResolve" title="(x: Symbol, xdef: wae.Exp, body: wae.Exp)wae.With">With</a><span class="delimiter">(</span><span title="(name: String)Symbol" class="symbol">'x</span>, <a href="#wae.num2exp" title="implicit wae.num2exp : (n: Int)wae.Num" class="int">5</a>, <a href="#wae.Add.readResolve" title="(lhs: wae.Exp, rhs: wae.Exp)wae.Add">Add</a><span class="delimiter">(</span><a href="#wae.sym2exp" title="implicit wae.sym2exp : (x: Symbol)wae.Id" class="symbol">'x</a>, <a href="#wae.With.readResolve" title="(x: Symbol, xdef: wae.Exp, body: wae.Exp)wae.With">With</a><span class="delimiter">(</span><span title="(name: String)Symbol" class="symbol">'y</span>, <a href="#wae.num2exp" title="implicit wae.num2exp : (n: Int)wae.Num" class="int">3</a>,<a href="#wae.sym2exp" title="implicit wae.sym2exp : (x: Symbol)wae.Id" class="symbol">'x</a><span class="delimiter">)</span><span class="delimiter">)</span><span class="delimiter">)</span>
+
+  <span class="comment">// assert(eval3(test4) == 10) //=&gt; Bang! unbound variable: 'x</span>
+
+  <span class="comment">/* The inner expression should result in an error, because `x` has no value. 
+   * Once again, substitution has changed a correct program into an incorrect one!
+   *
+   * Let’s understand what went wrong. Why didn’t we substitute the inner `x`? 
+   * Substitution halts at the `With` since, by deﬁnition, every `With` introduces 
+   * a new scope, which we said should delimit further substitution. 
+   *
+   * But in this example `With` contains an instance of `x`, which we very much 
+   * want to be substituted! So the question is, shall we substitute within nested 
+   * scopes or not? Actually, the two examples above should reveal that our latest
+   * deﬁnition for substitution, which may have seemed sensible at ﬁrst blush, 
+   * is too draconian: it rules out substitution within *any* nested scopes.
+   *
+   *
+   * &gt; **Definition (Substitution - Take 4):**
+   * &gt; To substitute identiﬁer `i` in `e` with expression `v`, replace all non-
+   * &gt; binding identiﬁers in `e` having the name `i` with the expression `v`, 
+   * &gt; except within nested scopes of `i`.
+   *
+   * Finally, we have a version of substitution that works. A different, more 
+   * succint way of phrasing this deﬁnition:
+   *
+   * &gt; **Deﬁnition (Substitution - Final Take):**
+   * &gt; To substitute identiﬁer `i` in `e` with expression `v`, replace all free 
+   * &gt; instances of `i` in `e` with `v`.
+   *
+   * A first attempt to implement this definition: */</span>
+  <span class="keyword">val</span> <a title="(wae.Exp, Symbol, wae.Num) =&gt; wae.Exp" id="wae.subst4">subst4</a>: <span class="delimiter">(</span>Exp,Symbol,Num<span class="delimiter">)</span> =&gt; Exp = <span class="delimiter">(</span><a title="wae.Exp" id="wae.subst4.$anonfun.e">e</a>,<a title="Symbol" id="wae.subst4.$anonfun.i">i</a>,<a title="wae.Num" id="wae.subst4.$anonfun.v">v</a><span class="delimiter">)</span> =&gt; <a href="#wae.subst4.$anonfun.e" title="wae.Exp">e</a> <span title="wae.Exp" class="keyword">match</span> <span class="delimiter">{</span>
+      <span class="keyword">case</span> Num<span class="delimiter">(</span><a title="Int" id="wae.subst4.$anonfun.n">n</a><span class="delimiter">)</span> =&gt; <a href="#wae.subst4.$anonfun.e" title="wae.Exp">e</a>
+      <span class="keyword">case</span> Id<span class="delimiter">(</span><span title="Symbol">x</span><span class="delimiter">)</span> =&gt; <span title="wae.Exp" class="keyword">if</span> <span class="delimiter">(</span><span title="Symbol">x</span> <span title="(x$1: AnyRef)Boolean">==</span> <a href="#wae.subst4.$anonfun.i" title="Symbol">i</a><span class="delimiter">)</span> <a href="#wae.subst4.$anonfun.v" title="wae.Num">v</a> <span class="keyword">else</span> <a href="#wae.subst4.$anonfun.e" title="wae.Exp">e</a>
+      <span class="keyword">case</span> Add<span class="delimiter">(</span><span title="wae.Exp">l</span>,<span title="wae.Exp">r</span><span class="delimiter">)</span> =&gt; <a href="#wae.Add.readResolve" title="(lhs: wae.Exp, rhs: wae.Exp)wae.Add">Add</a><span class="delimiter">(</span> <a href="#wae.subst4" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst4</a><span class="delimiter">(</span><span title="wae.Exp">l</span>,<a href="#wae.subst4.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst4.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span>, <a href="#wae.subst4" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst4</a><span class="delimiter">(</span><span title="wae.Exp">r</span>,<a href="#wae.subst4.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst4.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span><span class="delimiter">)</span>
+      <span class="keyword">case</span> Mul<span class="delimiter">(</span><span title="wae.Exp">l</span>,<span title="wae.Exp">r</span><span class="delimiter">)</span> =&gt; <a href="#wae.Mul.readResolve" title="(lhs: wae.Exp, rhs: wae.Exp)wae.Mul">Mul</a><span class="delimiter">(</span> <a href="#wae.subst4" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst4</a><span class="delimiter">(</span><span title="wae.Exp">l</span>,<a href="#wae.subst4.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst4.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span>, <a href="#wae.subst4" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst4</a><span class="delimiter">(</span><span title="wae.Exp">r</span>,<a href="#wae.subst4.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst4.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span><span class="delimiter">)</span>
+
+      <span class="comment">// Do not substitute when shadowed!</span>
+      <span class="keyword">case</span> With<span class="delimiter">(</span><span title="Symbol">x</span>,<a title="wae.Exp" id="wae.subst4.$anonfun.xdef">xdef</a>,<a title="wae.Exp" id="wae.subst4.$anonfun.body">body</a><span class="delimiter">)</span> =&gt; <span title="wae.Exp" class="keyword">if</span> <span class="delimiter">(</span><span title="Symbol">x</span> <span title="(x$1: AnyRef)Boolean">==</span> <a href="#wae.subst4.$anonfun.i" title="Symbol">i</a><span class="delimiter">)</span> <a href="#wae.subst4.$anonfun.e" title="wae.Exp">e</a> 
+                                <span class="keyword">else</span> <a href="#wae.With.readResolve" title="(x: Symbol, xdef: wae.Exp, body: wae.Exp)wae.With">With</a><span class="delimiter">(</span> <span title="Symbol">x</span>,
+                                           <a href="#wae.subst4" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst4</a><span class="delimiter">(</span><a href="#wae.subst4.$anonfun.xdef" title="wae.Exp">xdef</a>,<a href="#wae.subst4.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst4.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span>,
+                                           <a href="#wae.subst4" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst4</a><span class="delimiter">(</span><a href="#wae.subst4.$anonfun.body" title="wae.Exp">body</a>,<a href="#wae.subst4.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst4.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span><span class="delimiter">)</span>
+  <span class="delimiter">}</span>
+   
+  <span class="keyword">def</span> <a title="=&gt; wae.Exp =&gt; Int" id="wae.eval4">eval4</a> = <a href="#wae.makeEval" title="(subst: (wae.Exp, Symbol, wae.Num) =&gt; wae.Exp)wae.Exp =&gt; Int">makeEval</a><span class="delimiter">(</span><a href="#wae.subst4" title="=&gt; (wae.Exp, Symbol, wae.Num) =&gt; wae.Exp">subst4</a><span class="delimiter">)</span>
+
+  <span title="(assertion: Boolean)Unit">assert</span><span class="delimiter">(</span><a href="#wae.eval4" title="(v1: wae.Exp)Int">eval4</a><span class="delimiter">(</span><a href="#wae.test" title="=&gt; wae.With">test</a><span class="delimiter">)</span> <span title="(x: Int)Boolean">==</span> <span title="Int(10)" class="int">10</span><span class="delimiter">)</span>
+
+  <span title="(assertion: Boolean)Unit">assert</span><span class="delimiter">(</span><a href="#wae.eval4" title="(v1: wae.Exp)Int">eval4</a><span class="delimiter">(</span><a href="#wae.test2" title="=&gt; wae.With">test2</a><span class="delimiter">)</span> <span title="(x: Int)Boolean">==</span> <span title="Int(15)" class="int">15</span><span class="delimiter">)</span>
+
+  <span title="(assertion: Boolean)Unit">assert</span><span class="delimiter">(</span><a href="#wae.eval4" title="(v1: wae.Exp)Int">eval4</a><span class="delimiter">(</span><a href="#wae.test3" title="=&gt; wae.With">test3</a><span class="delimiter">)</span> <span title="(x: Int)Boolean">==</span> <span title="Int(8)" class="int">8</span><span class="delimiter">)</span> 
+
+  <span title="(assertion: Boolean)Unit">assert</span><span class="delimiter">(</span><a href="#wae.eval4" title="(v1: wae.Exp)Int">eval4</a><span class="delimiter">(</span><a href="#wae.test4" title="=&gt; wae.With">test4</a><span class="delimiter">)</span> <span title="(x: Int)Boolean">==</span> <span title="Int(10)" class="int">10</span><span class="delimiter">)</span> <span class="comment">//=&gt; Success!</span>
+
+  <span class="keyword">val</span> <a title="wae.With" id="wae.test5">test5</a> = <a href="#wae.With.readResolve" title="(x: Symbol, xdef: wae.Exp, body: wae.Exp)wae.With">With</a><span class="delimiter">(</span><span title="(name: String)Symbol" class="symbol">'x</span>, <a href="#wae.num2exp" title="implicit wae.num2exp : (n: Int)wae.Num" class="int">5</a>, <a href="#wae.With.readResolve" title="(x: Symbol, xdef: wae.Exp, body: wae.Exp)wae.With">With</a><span class="delimiter">(</span><span title="(name: String)Symbol" class="symbol">'x</span>, <a href="#wae.sym2exp" title="implicit wae.sym2exp : (x: Symbol)wae.Id" class="symbol">'x</a>, <a href="#wae.sym2exp" title="implicit wae.sym2exp : (x: Symbol)wae.Id" class="symbol">'x</a><span class="delimiter">)</span><span class="delimiter">)</span>
+
+  <span class="comment">// assert(eval4(test5) == 5) //=&gt; Bang! unbound variable 'x</span>
+
+  <span class="comment">/* This program should evaluate to 5, but it too halts with an error. This is 
+   * because we prematurely stopped substituting for `x` occuring in a bound 
+   * position. We should substitute in the named expression of a `With` even if 
+   * the `With` in question deﬁnes a new scope for the identiﬁer being substituted, 
+   * because its named expression is still in the scope of the enclosing binding 
+   * of the identiﬁer.  
+   *
+   * We ﬁnally get a valid programmatic deﬁnition of substitution (relative to the 
+   * language we have so far): */</span>
+  <span class="keyword">val</span> <a title="(wae.Exp, Symbol, wae.Num) =&gt; wae.Exp" id="wae.subst5">subst5</a>: <span class="delimiter">(</span>Exp,Symbol,Num<span class="delimiter">)</span> =&gt; Exp = <span class="delimiter">(</span><a title="wae.Exp" id="wae.subst5.$anonfun.e">e</a>,<a title="Symbol" id="wae.subst5.$anonfun.i">i</a>,<a title="wae.Num" id="wae.subst5.$anonfun.v">v</a><span class="delimiter">)</span> =&gt; <a href="#wae.subst5.$anonfun.e" title="wae.Exp">e</a> <span title="wae.Exp" class="keyword">match</span> <span class="delimiter">{</span>
+      <span class="keyword">case</span> Num<span class="delimiter">(</span><a title="Int" id="wae.subst5.$anonfun.n">n</a><span class="delimiter">)</span> =&gt; <a href="#wae.subst5.$anonfun.e" title="wae.Exp">e</a>
+      <span class="keyword">case</span> Id<span class="delimiter">(</span><span title="Symbol">x</span><span class="delimiter">)</span> =&gt; <span title="wae.Exp" class="keyword">if</span> <span class="delimiter">(</span><span title="Symbol">x</span> <span title="(x$1: AnyRef)Boolean">==</span> <a href="#wae.subst5.$anonfun.i" title="Symbol">i</a><span class="delimiter">)</span> <a href="#wae.subst5.$anonfun.v" title="wae.Num">v</a> <span class="keyword">else</span> <a href="#wae.subst5.$anonfun.e" title="wae.Exp">e</a>
+      <span class="keyword">case</span> Add<span class="delimiter">(</span><span title="wae.Exp">l</span>,<span title="wae.Exp">r</span><span class="delimiter">)</span> =&gt; <a href="#wae.Add.readResolve" title="(lhs: wae.Exp, rhs: wae.Exp)wae.Add">Add</a><span class="delimiter">(</span> <a href="#wae.subst5" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst5</a><span class="delimiter">(</span><span title="wae.Exp">l</span>,<a href="#wae.subst5.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst5.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span>, <a href="#wae.subst5" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst5</a><span class="delimiter">(</span><span title="wae.Exp">r</span>,<a href="#wae.subst5.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst5.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span><span class="delimiter">)</span>
+      <span class="keyword">case</span> Mul<span class="delimiter">(</span><span title="wae.Exp">l</span>,<span title="wae.Exp">r</span><span class="delimiter">)</span> =&gt; <a href="#wae.Mul.readResolve" title="(lhs: wae.Exp, rhs: wae.Exp)wae.Mul">Mul</a><span class="delimiter">(</span> <a href="#wae.subst5" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst5</a><span class="delimiter">(</span><span title="wae.Exp">l</span>,<a href="#wae.subst5.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst5.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span>, <a href="#wae.subst5" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst5</a><span class="delimiter">(</span><span title="wae.Exp">r</span>,<a href="#wae.subst5.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst5.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span><span class="delimiter">)</span>
+
+      <span class="comment">// Handle shadowing inside of `body`, not in `xdef`</span>
+      <span class="keyword">case</span> With<span class="delimiter">(</span><span title="Symbol">x</span>,<a title="wae.Exp" id="wae.subst5.$anonfun.xdef">xdef</a>,<a title="wae.Exp" id="wae.subst5.$anonfun.body">body</a><span class="delimiter">)</span> =&gt; <a href="#wae.With.readResolve" title="(x: Symbol, xdef: wae.Exp, body: wae.Exp)wae.With">With</a><span class="delimiter">(</span> <span title="Symbol">x</span>,
+                                      <a href="#wae.subst5" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst5</a><span class="delimiter">(</span><a href="#wae.subst5.$anonfun.xdef" title="wae.Exp">xdef</a>,<a href="#wae.subst5.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst5.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span>,
+                                      <span title="wae.Exp" class="keyword">if</span> <span class="delimiter">(</span><span title="Symbol">x</span> <span title="(x$1: AnyRef)Boolean">==</span> <a href="#wae.subst5.$anonfun.i" title="Symbol">i</a><span class="delimiter">)</span> <a href="#wae.subst5.$anonfun.body" title="wae.Exp">body</a> <span class="keyword">else</span> <a href="#wae.subst5" title="(v1: wae.Exp, v2: Symbol, v3: wae.Num)wae.Exp">subst5</a><span class="delimiter">(</span><a href="#wae.subst5.$anonfun.body" title="wae.Exp">body</a>,<a href="#wae.subst5.$anonfun.i" title="Symbol">i</a>,<a href="#wae.subst5.$anonfun.v" title="wae.Num">v</a><span class="delimiter">)</span><span class="delimiter">)</span>
+  <span class="delimiter">}</span>
+   
+  <span class="keyword">def</span> <a title="=&gt; wae.Exp =&gt; Int" id="wae.eval5">eval5</a> = <a href="#wae.makeEval" title="(subst: (wae.Exp, Symbol, wae.Num) =&gt; wae.Exp)wae.Exp =&gt; Int">makeEval</a><span class="delimiter">(</span><a href="#wae.subst5" title="=&gt; (wae.Exp, Symbol, wae.Num) =&gt; wae.Exp">subst5</a><span class="delimiter">)</span>
+
+  <span title="(assertion: Boolean)Unit">assert</span><span class="delimiter">(</span><a href="#wae.eval5" title="(v1: wae.Exp)Int">eval5</a><span class="delimiter">(</span><a href="#wae.test" title="=&gt; wae.With">test</a><span class="delimiter">)</span> <span title="(x: Int)Boolean">==</span> <span title="Int(10)" class="int">10</span><span class="delimiter">)</span>
+
+  <span title="(assertion: Boolean)Unit">assert</span><span class="delimiter">(</span><a href="#wae.eval5" title="(v1: wae.Exp)Int">eval5</a><span class="delimiter">(</span><a href="#wae.test2" title="=&gt; wae.With">test2</a><span class="delimiter">)</span> <span title="(x: Int)Boolean">==</span> <span title="Int(15)" class="int">15</span><span class="delimiter">)</span>
+
+  <span title="(assertion: Boolean)Unit">assert</span><span class="delimiter">(</span><a href="#wae.eval5" title="(v1: wae.Exp)Int">eval5</a><span class="delimiter">(</span><a href="#wae.test3" title="=&gt; wae.With">test3</a><span class="delimiter">)</span> <span title="(x: Int)Boolean">==</span> <span title="Int(8)" class="int">8</span><span class="delimiter">)</span> 
+
+  <span title="(assertion: Boolean)Unit">assert</span><span class="delimiter">(</span><a href="#wae.eval5" title="(v1: wae.Exp)Int">eval5</a><span class="delimiter">(</span><a href="#wae.test4" title="=&gt; wae.With">test4</a><span class="delimiter">)</span> <span title="(x: Int)Boolean">==</span> <span title="Int(10)" class="int">10</span><span class="delimiter">)</span> 
+
+  <span title="(assertion: Boolean)Unit">assert</span><span class="delimiter">(</span><a href="#wae.eval5" title="(v1: wae.Exp)Int">eval5</a><span class="delimiter">(</span><a href="#wae.test5" title="=&gt; wae.With">test5</a><span class="delimiter">)</span> <span title="(x: Int)Boolean">==</span> <span title="Int(5)" class="int">5</span><span class="delimiter">)</span> 
+
+   
+   
+  <span class="comment">/* Summary
+   * -------
+   * In this section we tried to introduce binding of names to our WAE language. 
+   * Doing so we have learned that
+   *
+   * 1. Substitution can be used to understand the meaning of names in 
+   *    programming languages.
+   *
+   * 2. Correct implementations of substitution need to handle free, bound, 
+   *    and binding instances of names and their scopes correctly. 
+   */</span>
+<span class="delimiter">}</span>
+        </pre>
+    </body>
+</html>
