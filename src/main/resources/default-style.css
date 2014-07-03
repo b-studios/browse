@@ -1,55 +1,515 @@
-body { background: white; }
+@charset "UTF-8";
+@import url(http://fonts.googleapis.com/css?family=Lato:100,300,400);
+/**
+ * HTML5 ✰ Boilerplate
+ *
+ * style.css contains a reset, font normalization and some base styles.
+ *
+ * Credit is left where credit is due.
+ * Much inspiration was taken from these projects:
+ * - yui.yahooapis.com/2.8.1/build/base/base.css
+ * - camendesign.com/design/
+ * - praegnanz.de/weblog/htmlcssjs-kickstart
+ */
+/**
+ * html5doctor.com Reset Stylesheet (Eric Meyer's Reset Reloaded + HTML5 baseline)
+ * v1.6.1 2010-09-17 | Authors: Eric Meyer & Richard Clark
+ * html5doctor.com/html-5-reset-stylesheet/
+ */
+/* line 27, _resets.scss */
+html, body, body div, span, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+abbr, address, cite, code, del, dfn, em, img, ins, kbd, q, samp,
+small, strong, sub, sup, var, b, i, dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section, summary,
+time, mark, audio, video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  vertical-align: baseline;
+}
 
-pre, code {
-	font-family: Monaco, Consolas, monospace;
-	font-size: 12px;
-	line-height: 16px;
+/* line 35, _resets.scss */
+article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section {
+  display: block;
+}
+
+/* line 39, _resets.scss */
+blockquote, q {
+  quotes: none;
+}
+
+/* line 42, _resets.scss */
+blockquote:before, blockquote:after,
+q:before, q:after {
+  content: "";
+  content: none;
+}
+
+/* line 44, _resets.scss */
+ins {
+  background-color: #ff9;
+  color: #000;
+  text-decoration: none;
+}
+
+/* line 46, _resets.scss */
+mark {
+  background-color: #ff9;
+  color: #000;
+  font-style: italic;
+  font-weight: bold;
+}
+
+/* line 48, _resets.scss */
+del {
+  text-decoration: line-through;
+}
+
+/* line 50, _resets.scss */
+abbr[title], dfn[title] {
+  border-bottom: 1px dotted;
+  cursor: help;
+}
+
+/* line 52, _resets.scss */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* line 54, _resets.scss */
+hr {
+  display: block;
+  height: 1px;
+  border: 0;
+  border-top: 1px solid #ccc;
+  margin: 0.618em 0;
+  padding: 0;
+}
+
+/* Font normalization inspired by YUI Library's fonts.css: developer.yahoo.com/yui/ */
+/* line 58, _resets.scss */
+body {
+  font: 11pt "Palatino Linotype", "Book Antiqua", Palatino, FreeSerif, serif;
+  *font-size: small;
+}
+
+/* Hack retained to preserve specificity */
+/* Normalize monospace sizing: en.wikipedia.org/wiki/MediaWiki_talk:Common.css/Archive_11#Teletype_style_fix_for_Chrome */
+/* line 61, _resets.scss */
+pre, code, kbd, samp {
+  font-family: monospace, sans-serif;
+  white-space: pre-wrap;
+}
+
+/* 1) Always force a scrollbar in non-IE 
+   2) Remove iOS text size adjust without disabling user zoom: www.456bereastreet.com/archive/201012/controlling_text_size_in_safari_for_ios_without_disabling_user_zoom/ */
+/* line 68, _resets.scss */
+html {
+  overflow-y: scroll;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+/* j.mp/webkit-tap-highlight-color */
+/* line 71, _resets.scss */
+a:link {
+  -webkit-tap-highlight-color: #FF5E99;
+}
+
+/* Accessible focus treatment: people.opera.com/patrickl/experiments/keyboard/test */
+/* line 74, _resets.scss */
+a:hover, a:active {
+  outline: none;
+}
+
+/* line 76, _resets.scss */
+ul, ol {
+  margin-left: 2em;
+  margin-bottom: 0.618em;
+}
+
+/* line 80, _resets.scss */
+ol {
+  list-style-type: decimal;
+}
+
+/* line 82, _resets.scss */
+dl {
+  margin-bottom: 0.618em;
+}
+
+/* Remove margins for navigation lists */
+/* line 87, _resets.scss */
+nav ul, nav li {
+  margin: 0;
+  list-style: none;
+  list-style-image: none;
+}
+
+/* line 89, _resets.scss */
+small {
+  font-size: 85%;
+}
+
+/* line 90, _resets.scss */
+b, strong, th {
+  font-weight: bold;
+}
+
+/* line 92, _resets.scss */
+td {
+  vertical-align: top;
+}
+
+/* Set sub, sup without affecting line-height: gist.github.com/413930 */
+/* line 95, _resets.scss */
+sub, sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+}
+
+/* line 96, _resets.scss */
+sup {
+  top: -0.5em;
+}
+
+/* line 97, _resets.scss */
+sub {
+  bottom: -0.25em;
+}
+
+/* line 99, _resets.scss */
+pre {
+  /* www.pathf.com/blogs/2008/05/formatting-quoted-code-in-blog-posts-css21-white-space-pre-wrap/ */
+  white-space: pre;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  padding: 15px;
+}
+
+/* line 105, _resets.scss */
+.oldie legend {
+  *margin-left: -7px;
+}
+
+/* 1) Make inputs and buttons play nice in IE: www.viget.com/inspire/styling-the-button-element-in-internet-explorer/
+   2) WebKit browsers add a 2px margin outside the chrome of form elements. 
+      Firefox adds a 1px margin above and below textareas 
+   3) Set font-size to match <body>'s, and font-family to sans-serif 
+   4) Align to baseline */
+/* line 112, _resets.scss */
+button, input, select, textarea {
+  width: auto;
+  overflow: visible;
+  margin: 0;
+  font-size: 100%;
+  font-family: sans-serif;
+  vertical-align: baseline;
+}
+
+/* 1) Remove default scrollbar in IE: www.sitepoint.com/blogs/2010/08/20/ie-remove-textarea-scrollbars/
+   2) Align to text-top */
+/* line 116, _resets.scss */
+textarea {
+  overflow: auto;
+  vertical-align: text-top;
+}
+
+/* Hand cursor on clickable input elements */
+/* line 119, _resets.scss */
+label, input[type="button"], input[type="submit"], input[type="image"], button {
+  cursor: pointer;
+}
+
+/* Remove extra padding and inner border in Firefox */
+/* line 123, _resets.scss */
+input::-moz-focus-inner,
+button::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+/* Colors for form validity */
+/* line 127, _resets.scss */
+input:invalid, textarea:invalid {
+  border-radius: 1px;
+  -moz-box-shadow: 0px 0px 5px red;
+  -webkit-box-shadow: 0px 0px 5px red;
+  box-shadow: 0px 0px 5px red;
+}
+
+/* line 128, _resets.scss */
+.no-boxshadow input:invalid, .no-boxshadow textarea:invalid {
+  background-color: #f0dddd;
+}
+
+/* Bicubic resizing in IE7 for non-native sized IMG:
+   code.flickr.com/blog/2008/11/12/on-ui-quality-the-little-things-client-side-image-resizing/ */
+/* line 132, _resets.scss */
+.oldie img {
+  -ms-interpolation-mode: bicubic;
+}
+
+/* http://imakewebthings.com/deck.js/#sample */
+/* Kudos to http://www.colorzilla.com/gradient-editor/ */
+/* inspired by http://docs.sencha.com/ext-js/4-0/ */
+/* line 13, default-style.scss */
+html {
+  height: 100%;
+}
+
+/* line 14, default-style.scss */
+body {
+  background-color: #f5f5ff;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+/* line 19, default-style.scss */
+a, a:visited {
+  color: #261a3b;
+}
+
+/* line 23, default-style.scss */
+p {
+  margin: 15px 0 10px 0;
+}
+
+/* line 27, default-style.scss */
+pre, tt, code {
+  font-size: 0.9em;
+  line-height: 1.4em;
+  font-family: Menlo, Monaco, Consolas, "Lucida Console", monospace;
+  margin: 0;
+  padding: 0;
+}
+
+/* line 34, default-style.scss */
+header nav {
+  -moz-box-shadow: 0 -5px 5px rgba(0, 0, 0, 0.2) inset;
+  -webkit-box-shadow: 0 -5px 5px rgba(0, 0, 0, 0.2) inset;
+  -o-box-shadow: 0 -5px 5px rgba(0, 0, 0, 0.2) inset;
+  box-shadow: 0 -5px 5px rgba(0, 0, 0, 0.2) inset;
+  background: #333;
+}
+/* line 37, default-style.scss */
+header nav li {
+  display: inline-block;
+}
+/* line 39, default-style.scss */
+header nav li a, header nav li a:visited {
+  -webkit-transition: all 0.3s ease-in-out;
+  -moz-transition: all 0.3s ease-in-out;
+  -o-transition: all 0.3s ease-in-out;
+  -ms-transition: all 0.3s ease-in-out;
+  transition: all 0.3s ease-in-out;
+  display: inline-block;
+  color: #d5d5d5;
+  font-family: Lato, sans-serif;
+  font-weight: 300;
+  text-decoration: none;
+  padding: 1em 0.5em;
+  text-shadow: 1px 1px #000;
+}
+/* line 49, default-style.scss */
+header nav li a:hover {
+  -webkit-transition: all 0.3s ease-in-out;
+  -moz-transition: all 0.3s ease-in-out;
+  -o-transition: all 0.3s ease-in-out;
+  -ms-transition: all 0.3s ease-in-out;
+  transition: all 0.3s ease-in-out;
+  color: #fff;
+}
+
+/* line 56, default-style.scss */
+div.docs, body.markdown > article {
+  padding: 1px 1em;
+  background: #ffffff;
+}
+/* line 62, default-style.scss */
+div.docs h1, div.docs h2, div.docs h3, body.markdown > article h1, body.markdown > article h2, body.markdown > article h3 {
+  font-family: Lato, sans-serif;
+  font-weight: 300;
+  margin: 1em 0 0.5em 0;
+}
+/* line 68, default-style.scss */
+div.docs h1, body.markdown > article h1 {
+  font-size: 24pt;
+}
+/* line 72, default-style.scss */
+div.docs h2, body.markdown > article h2 {
+  font-size: 20pt;
+}
+/* line 76, default-style.scss */
+div.docs hr, body.markdown > article hr {
+  border: 0 none;
+  border-top: 1px solid #e5e5ee;
+  height: 1px;
+  margin: 20px 0;
+}
+/* line 83, default-style.scss */
+div.docs pre, body.markdown > article pre {
+  padding-left: 2em;
+}
+/* line 87, default-style.scss */
+div.docs pre > code, body.markdown > article pre > code {
+  background: none;
+  border: none;
+}
+/* line 92, default-style.scss */
+div.docs code, body.markdown > article code {
+  border: 1px solid #dedede;
+  background: #f5f5ff;
+  padding: 0 0.5em;
+}
+/* line 98, default-style.scss */
+div.docs blockquote, body.markdown > article blockquote {
+  padding-left: 2em;
+  padding-right: 1em;
+  font-style: italic;
+}
+
+/* line 105, default-style.scss */
+div.code {
+  border-top: 1px solid #e5e5ee;
+  border-bottom: 1px solid #e5e5ee;
+  padding: 1em;
+}
+/* line 110, default-style.scss */
+div.code a {
+  text-decoration: none;
+  border-bottom: 1px dotted #aaa;
+}
+
+/* line 116, default-style.scss */
+#documentation > section:first-child div.code {
+  display: none;
+}
+
+/* --------------------- Table Layout -------------------------*/
+@media only screen and (min-width: 950px) {
+  /* line 124, default-style.scss */
+  #documentation {
+    display: table;
+  }
+  /* line 127, default-style.scss */
+  #documentation > section {
+    display: table-row;
+  }
+  /* line 130, default-style.scss */
+  #documentation > section > div.code, #documentation > section > div.docs {
+    display: table-cell;
+    vertical-align: top;
+  }
+
+  /* line 137, default-style.scss */
+  div.docs, body.markdown > article {
+    width: 40%;
+    max-width: 900px;
+    min-width: 400px;
+    padding: 1px 1em;
+    border-right: 1px solid #e5e5ee;
+  }
+
+  /* line 145, default-style.scss */
+  div.code {
+    padding: 0 1em;
+    border: none;
+  }
+
+  /* line 150, default-style.scss */
+  article > section:not(:first-child) > div.docs:hover + div.code {
+    -webkit-transition: all 0.3s ease-in-out;
+    -moz-transition: all 0.3s ease-in-out;
+    -o-transition: all 0.3s ease-in-out;
+    -ms-transition: all 0.3s ease-in-out;
+    transition: all 0.3s ease-in-out;
+    -moz-box-shadow: 5px 0 0 0 rgba(0, 0, 0, 0.05) inset;
+    -webkit-box-shadow: 5px 0 0 0 rgba(0, 0, 0, 0.05) inset;
+    -o-box-shadow: 5px 0 0 0 rgba(0, 0, 0, 0.05) inset;
+    box-shadow: 5px 0 0 0 rgba(0, 0, 0, 0.05) inset;
+    background: #f0f0ff;
+  }
+}
+/* line 158, default-style.scss */
+body > pre {
+  font-family: Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 16px;
 }
 
 /* syntax highlighting */
-.keyword { font-weight: bolder; }
-.string { color: red; }
-.symbol { color: red; font-weight: bolder;}
-.char { color: #FF00FF; }
-.double { color: blue; }
-.float { color: blue; }
-.long { color: #008080; }
-.int { color: #008080; }
-.comment { color: gray; font-style: italic; }
+/* line 165, default-style.scss */
+.keyword {
+  font-weight: bold;
+}
+
+/* line 166, default-style.scss */
+.string {
+  color: #dd2200;
+  background-color: #fff0f0;
+}
+
+/* line 167, default-style.scss */
+.char {
+  color: #d14;
+}
+
+/* line 168, default-style.scss */
+.double, .float {
+  color: #0000DD;
+  font-weight: bold;
+}
+
+/* line 169, default-style.scss */
+.long, .int {
+  color: #099;
+}
+
+/* line 170, default-style.scss */
+.comment {
+  color: #888888;
+  font-style: italic;
+}
 
 /* to highlight a reference or definition */
-:target, .highlighted
-{
-	background: #FFaaaa;
+/* line 173, default-style.scss */
+:target, .highlighted {
+  background: #FFaaaa;
 }
 
-body {
-	font-family: Helvetica, Arial;
-	font-size: 12px;
+/* line 177, default-style.scss */
+.qtip-content {
+  background: #303030 !important;
+  padding: 0px 6px;
+  font-size: 0.9em;
+  line-height: 1.4em;
+  font-family: Menlo, Monaco, Consolas, "Lucida Console", monospace;
 }
 
-div.tool {
-	display: none;
-	position:  fixed;
-	bottom: 0;
-	background-color: rgb(48, 48, 48);
-	color: rgb(243, 243, 243);
-	padding: 5px;
+/* line 186, default-style.scss */
+body.literate {
+  background: #323438;
 }
 
-div.tool a, div.tool a:visited, div.tool a:link {
-	color: white;
-	font-weight: bold;
+/* line 190, default-style.scss */
+.literate article#documentation {
+  width: 90%;
+  margin: 1% 5%;
+  background: #f5f5ff;
+  box-shadow: 5px 4px 9px 4px rgba(0, 0, 0, 0.3);
+  border: 1px solid #7A7A7A;
+  border-radius: 3px;
 }
 
-div#export-control { right: 0; text-align: right; }
-div#export-control a { padding: 0 5px; }
-div#export { left: 0; width: 100%; }
-div#export code { display: block; padding-right: 60px; }
-
-div#pop-out { left: 0; width: 100%; }
-
-div#pop-out input {
-	margin-right: .75em;
-	vertical-align: middle;
+/* line 199, default-style.scss */
+.literate div.docs {
+  background: #fff;
 }
