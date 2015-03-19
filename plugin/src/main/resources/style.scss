@@ -1,0 +1,447 @@
+$element-margin: 0.618em;
+$default-fonts: 'Roboto Slab', 'Palatino Linotype', 'Book Antiqua', Palatino, FreeSerif, serif;
+$default-font-color: #ddd;
+$default-font-size: 11pt;
+$background-color: #323438;
+$code-background: #f5f5f5;
+$highlight: #FFaaaa;
+$border-color: #dedede;
+$inset: 1em;
+
+@import 'resets';
+@import 'helpers';
+
+@import url(http://fonts.googleapis.com/css?family=Lato:100,300,400);
+@import url(http://fonts.googleapis.com/css?family=Roboto+Slab:200,400,300,700&subset=latin,latin-ext);
+
+//--------------------- Layout and Typography ----------------------------
+html {
+  height: 100%; 
+}
+body {
+  background-color: $background-color;
+  margin: 0; padding: 0;
+  font-weight: 200;
+  line-height: 1.6em;
+  //min-height:100%;
+}
+a, a:visited {
+  color: #261a3b;
+}
+
+p {
+  margin: 15px 0 10px 0;
+}
+
+pre, tt, code {
+  line-height: 1.4em;
+  font-family: Menlo, Monaco, Consolas, "Lucida Console", monospace;
+  margin: 0; padding: 0;
+}
+
+header nav {
+  @include box-shadow(0 -5px 5px rgba(0,0,0,0.2) inset);
+  background: #333;
+  li {
+    display: inline-block;      
+    a, a:visited {
+      @include transition(all, 0.3s);
+      display: inline-block;
+      color: #d5d5d5;
+      font-family: Lato, sans-serif;
+      font-weight: 300;
+      text-decoration: none;
+      padding: 1em 0.5em;
+      text-shadow: 1px 1px #000;
+    }
+    a:hover {
+      @include transition(all, 0.3s);
+      color: #fff;
+    }
+  }
+}
+
+@mixin markdownStyles {
+  hr {
+    border: 0 none;
+    border-top: 1px solid $border-color;
+    height: 1px;
+    margin: 20px 0;
+  }
+
+  pre {
+    margin: 1.5em $inset 1.5em;
+  }
+
+  // inline code
+  code {
+    border: 1px solid $border-color;
+    background: $code-background;
+    padding: 0 0.25em;
+    margin: 0 0.25em;
+  }
+
+  // code in code-blocks
+  pre > code {
+    display: block;
+    background: none;
+    border: none;
+    //padding: 0 1em;
+    margin: 0;
+  }
+
+  blockquote {
+    padding-left: $inset;
+    padding-right: 1em;
+    font-style: italic;
+  }
+  
+  strong {
+    font-weight: bold;
+  }
+  
+  table {
+      
+    margin: 1.5em $inset 1.5em;
+    
+    thead {
+      border-top: 2px solid $border-color;
+    }
+    
+    tbody {
+      border-top: 1px solid $border-color;
+      border-bottom: 2px solid $border-color;
+    }
+  
+    th {
+      font-weight: bolder;
+    }
+  
+    td, th {
+      padding: 0.25em 0.5em;
+    }
+  }
+  
+  ul {
+    list-style-type: none;
+    
+    li:before {
+      content: "-";
+      margin-left: -1em;
+      padding-right: 0.5em;
+      font-weight: bolder;
+    }
+  }
+  
+  dl {
+    margin: 1.5em $inset 1.5em;
+    display: table;
+
+    dt {
+      float: left;
+      padding-right: 1em;
+      font-weight: bolder; 
+    }
+    
+    dd {
+      margin-left: 2em;
+      margin-bottom: 1em;
+    }
+  }
+}
+
+div.docs, body.markdown > article {
+
+  @include markdownStyles;
+
+  padding: 1px 1em;
+
+  background: #ffffff;
+
+  h1, h2, h3 {
+    font-family: Lato, sans-serif;
+    font-weight: 300;
+    margin: 1em 0 0.75em 0;
+  }
+
+  h1 {
+    font-size: 24pt;
+  }
+
+  h2 {
+    font-size: 20pt;
+  }
+}
+
+div.code {
+  border-top: 1px solid $border-color;
+  border-bottom: 1px solid $border-color;
+  padding: 0.5em 1em;
+  
+  cursor: default;
+  
+  a {
+    text-decoration: none;
+    border-bottom: 1px dotted #aaa;
+  }
+  
+  .hide { display: none; }
+  
+  .comment {
+  
+    @include markdownStyles;
+    
+    white-space: normal;
+    border-left: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: $default-fonts;
+    display: inline-block;
+    box-sizing: border-box;
+    padding: 0 1em;
+    margin: 0 0 1em;
+    font-size: 0.9em;
+    color: #888;
+    margin-bottom: 1px;
+  }
+    
+  // to highlight a reference or definition
+  :target, .highlighted {
+    display: inline-block;
+    background: $highlight;
+    color: #5F2222;
+    box-shadow: 0 0 0px 5px $highlight;
+    border-radius: 1px;
+  }
+  
+  [data-defs] {}
+}
+
+div.docs {
+  background: #fefefe;
+  
+  // code examples
+  pre {
+    display: block;
+    background: $code-background;
+    border: 1px solid $border-color;
+    //border-top: 1px solid $border-color;
+    //border-bottom: 1px solid $border-color;
+    padding: 0.5em 1em;
+    box-shadow: #fff 0px 0px 0px 1px inset;
+  }
+}
+
+#documentation {
+  margin: 1%;
+  background: $code-background;
+  box-shadow: 0px 1px 12px 4px rgba(0, 0, 0, 0.6);
+  border: 1px solid #7A7A7A;
+  border-radius: 3px;
+}
+
+// TODO fix selector
+.scaladocs > section {
+  @extend div.docs;
+  @include markdownStyles;
+  
+  h4.signature {
+    border-top: 1px solid $border-color;
+    border-bottom: 1px solid $border-color;
+    padding: 0.25em 0.5em;
+    margin-bottom: 1em;
+    font-weight: normal;
+    
+    .name {
+      font-weight: bold;
+    }
+  }
+  
+  .toggleContainer, dl {
+    
+    margin: 0.5em $inset 0.5em;
+    
+    width: 100%;
+    
+    .toggle, dt {
+      float: left;
+      font-weight: bolder;
+      clear: left;
+    }
+    
+    .hiddenContent, dd {
+      padding-left: 12em;
+      margin-left: 1px;
+    }
+  
+  }
+  
+  .tparams, .extype, [name] {
+    margin: 0.25em;
+  }
+}
+
+// Index navigation
+body > aside {
+  
+  input[type="search"] {
+    opacity: 0.4;
+    font-size: 1.5em;
+    padding: 0.5em;
+  }
+  
+  input[type="search"]:focus {
+    opacity: 1;
+  }
+  
+  .index {
+    
+    $text-color: #ccc;
+    $highlight-color: #efefef;
+    $label-width: 10em;
+    
+    color: $text-color;
+    
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    
+    li {
+    
+      border-top: 1px solid #555;
+      padding: 1em 0.5em;
+      margin: 0;
+      
+      > h4 {
+        font-size: 2em;
+        font-family: Lato, sans-serif;
+        font-weight: 300;
+        margin: 0;
+        margin-bottom: 0.5em;
+        color: $highlight-color;
+      }
+      
+      .signature {
+        white-space: nowrap;
+        h4 { font-weight: 100; }
+        .name { font-weight: bold; }
+        a { color: $highlight-color; text-decoration: none; }
+      }
+      
+      .path {
+        font-style: italic;
+        color: darken($text-color, 20%);
+      }
+      
+    }
+    
+    li:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .matchresult {
+      color: #D1FF7D;
+      font-weight: bold;
+    }
+  }
+}
+
+
+/* --------------------- Table Layout -------------------------*/
+@media only screen and (min-width: 950px) {
+
+  body {
+    width: 100%;
+    display: table;
+    
+    div#page, > aside {
+      display: table-cell;
+      vertical-align: top;
+    }
+  }
+  
+
+  body > aside {
+    min-width: 250px;
+    max-width: 450px;
+    
+    overflow: hidden;
+    text-overflow: ellipsis;
+    
+    padding: 2em 0 0 2em;
+    
+    input[type="search"] {
+      display: block;
+      width: 100%;
+    } 
+  }
+  
+  div#page {
+    padding: 2em;
+    box-sizing: border-box;
+  }
+
+  #documentation {
+    width: 100%;
+    display: table;
+    margin: 0;
+    
+    > section {
+      display: table-row;
+
+      > div.code, > div.docs {
+        display: table-cell;
+        vertical-align: top;
+      }
+    }
+  }
+
+  div.docs, div.code {
+    padding-bottom: 1em;
+  }
+  
+  div.docs {
+    width: 40%;
+    max-width: 900px;
+    min-width: 400px;
+    padding: 1em 1em 1px 2em;
+    border-right: 1px solid #e5e5ee;
+    
+    
+    pre {
+      margin-right: (-1 * $inset);
+      border-right: none;
+      box-shadow: none;
+    }
+  }
+
+  div.code {
+    min-width: 400px;
+    padding-left: 1em;
+    padding-right: 1em;
+    border: none;
+  }
+
+  article > section:not(:first-child) > div.docs:hover + div.code {
+    @include transition(all, 0.3s);
+    @include box-shadow(5px 0 0 0 rgba(0,0,0,0.05) inset);
+    background: darken($code-background, 1%);
+  }
+}
+
+// ---------------------------- Scala XRay -------------------------------------
+
+/* syntax highlighting */
+.scaladocs pre .kw, .code .keyword { font-weight: bold; }
+.scaladocs pre .lit, .code .string { color: #dd2200; background-color: #fff0f0; }
+.code .char { color: #d14; }
+.code .double, .float { color: #0000DD; font-weight: bold }
+.scaladocs pre .num, .code .long, .int { color: #099; }
+
+
+.qtip-content {
+  background: rgb(48, 48, 48) !important;
+  padding: 0px 6px;
+  font-size: 0.9em;
+  line-height: 1.4em;
+  font-family: Menlo, Monaco, Consolas, "Lucida Console", monospace;
+}

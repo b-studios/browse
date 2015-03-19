@@ -1,0 +1,4 @@
+package someFolder
+
+class Foo {
+}
