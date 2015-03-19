@@ -2,6 +2,9 @@ This is a fork of Scala XRay presenting the scala sources in a literate programm
 
 See <http://b-studios.github.io/browse/samples/literate/WAE.scala.html> for an example.
 
+**This branch is trying to incorporate SXR and ScalaDoc at the same time to enable maximum documentation**
+
+![A screenshot of the output](https://raw.githubusercontent.com/b-studios/browse/rewrite-wip/screenshot.png)
 
 Browsable Scala source code in HTML with:
 
