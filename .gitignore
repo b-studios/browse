@@ -2,3 +2,15 @@ project/boot/
 target/
 src/test/
 src_managed/
+
+.classpath
+.project
+.settings/
+
+.sublime
+.sass-cache/
+*.css
+
+.DS_Store
+
+test/lib
